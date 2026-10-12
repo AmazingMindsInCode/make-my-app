@@ -24,7 +24,7 @@ description: 「我要做软件」环境体检与装配向导。检测项目路�
 | MySQL 8 | `sc query MySQL80` 或 services.msc + 连接测试 | 存不了数据 |
 | Git | `git --version` | 存档点用不了 |
 | 端口 8080 空闲 | `netstat -ano \| findstr :8080`（见 P8） | 软件起不来 |
-| Node 22 | `node -v` | 只在**要改页面时**才必须 → 可标 deferred |
+| Node 22 | `node -v` | 做不了页面，也跑不了自动验收考卷 → 搭骨架前必须装好 |
 
 体检完给用户一张大白话清单（缺什么、每个要几分钟），然后一次一问：**"现在就装，还是先聊你想做什么？"**（👉 推荐：先聊需求，装机放后台节奏——聊完再装也行）。
 
@@ -37,7 +37,7 @@ description: 「我要做软件」环境体检与装配向导。检测项目路�
 > 这件工具怎么装？
 > - A ⭐推荐：**我来装**——我直接在你电脑上执行安装（弹出系统确认窗时你点一下"是"），装完我验证给你看
 > - B：**你自己装**——我给每一步的傻瓜指引，你动手
-> - C：**先跳过**——如果它此刻不是必需的（如 Node 未到改页面时）
+> - C：**先跳过**——如果它此刻不是必需的（如还在聊需求，搭骨架前装好就行）
 
 ### 代办安装模式（用户选 A 时）
 
@@ -68,7 +68,7 @@ description: 「我要做软件」环境体检与装配向导。检测项目路�
 
 - 安装类型明确选 **Server only**，别的组件不需要。
 - root 密码：提醒"这是数据库的钥匙，设简单点没关系（本机用），但必须记得住"。
-- 装完必做三件事：①服务在跑（services.msc 截图级指引）②建库（golden-path 的 SQL，你跑；mysql 客户端不在 PATH 就用项目连接测试代替）③把密码写进 `backend/src/main/resources/application-local.yml`（没有就先记在纸上，scaffold 时写入）。
+- 装完必做两件事：①服务在跑（services.msc 截图级指引）②把密码写进 `backend/src/main/resources/application-local.yml`（没有就先记在纸上，scaffold 时写入）。**库和表不用手建**：软件第一次启动时自动建好（golden-path"表结构"），所以真正的连接测试发生在搭骨架首次启动时，连不上按 P9 处理。
 - 排错速查：3306 被占（P8）/ 服务起不来（重新跑 MySQL Installer 的 Reconfigure）/ 密码错（P9）。
 
 ### JDK 专项
@@ -77,8 +77,8 @@ description: 「我要做软件」环境体检与装配向导。检测项目路�
 
 ## 三、完成判定
 
-- `progress.json` 的 `env` 全部 ok（或 deferred 且注明触发条件，如 "node: deferred:改页面时再装"）。
-- 做过一次真实连接测试（不是只看服务状态）。
+- `progress.json` 的 `env` 全部 ok（或 deferred 且注明触发条件，如 "mysql: deferred:先聊需求，搭骨架前装好"）。
+- MySQL 服务确认在跑（真实连接测试在 scaffold 首次启动时完成）。
 - 向用户汇报："工具都齐了，随时可以开工。"
 
 ## 铁律

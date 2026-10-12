@@ -16,8 +16,10 @@ const PORT = Number(process.env.MMA_TEST_PORT || 8081);
 const HEALTH = `http://localhost:${PORT}/api/health`;
 const START_TIMEOUT_S = Number(process.env.MMA_START_TIMEOUT || 300); // 第一次启动要下载依赖，给足时间
 const WIN = process.platform === 'win32';
+// mvnw 用绝对路径调用：有的 AI 工具环境设置了 NoDefaultCurrentDirectoryInExePath，cmd 不会在当前目录找 mvnw.cmd
+const MVNW = WIN ? `"${join(ROOT, 'backend', 'mvnw.cmd')}"` : `sh "${join(ROOT, 'backend', 'mvnw')}"`;
 const CMD = process.env.MMA_SERVER_CMD ||
-  `${WIN ? 'mvnw.cmd' : './mvnw'} -s .mvn/aliyun-settings.xml spring-boot:run -Dspring-boot.run.profiles=local,test`;
+  `${MVNW} -s .mvn/aliyun-settings.xml spring-boot:run -Dspring-boot.run.profiles=local,test`;
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const say = (m) => console.log(`[测试实例] ${m}`);
@@ -35,18 +37,15 @@ function logTail(n = 30) {
   return readFileSync(LOG_FILE, 'utf8').split(/\r?\n/).slice(-n).join('\n');
 }
 
-// PID 文件里的进程还是不是我们起的看护进程（防止 PID 被系统复用后误杀别的程序）
+// PID 文件里的进程还是不是我们起的看护进程：核对完整命令行。
+// 电脑重启后 PID 会被系统复用，只看进程名可能误杀 AI 工具自己的 node 进程。查不到就当不是，宁可不杀。
 function ours(pid) {
-  if (WIN) {
-    const r = spawnSync('tasklist', ['/FI', `PID eq ${pid}`, '/FO', 'CSV', '/NH'], { encoding: 'utf8' });
-    return /"node\.exe"/i.test(r.stdout || '');
-  }
-  try {
-    process.kill(pid, 0);
-    return true;
-  } catch {
-    return false;
-  }
+  const r = WIN
+    ? spawnSync('powershell', ['-NoProfile', '-NonInteractive', '-Command',
+      `(Get-CimInstance Win32_Process -Filter "ProcessId=${pid}").CommandLine`], { encoding: 'utf8' })
+    : spawnSync('ps', ['-o', 'args=', '-p', String(pid)], { encoding: 'utf8' });
+  const cmdline = r.stdout || '';
+  return cmdline.includes('server-ctl.mjs') && cmdline.includes('__keep');
 }
 
 function kill() {

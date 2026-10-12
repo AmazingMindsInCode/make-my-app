@@ -77,7 +77,7 @@
 - task.status 只有三值：todo / doing / done。
 - **每个 task 必须带 spec**（3-6 条用户视角验收标准，生成于 solution 阶段，每条 `{ "id": "T#-S#", "text": "…" }`）。spec 是出题依据：mma-spec-tester 把每条写成考题落在 `.make-my-app/tests/T#.mjs`，由 `.make-my-app/tests/run-tests.mjs` 执行；执行器退出码 0 才准标 done。考题随存档走，是整个软件的回归测试。
 - 读到 schemaVersion 1 的旧格式（spec 是字符串数组）：按顺序补编号 T#-S1、T#-S2…，写回为 schemaVersion 2。
-- `dbName` 在建库时写入（规则见 golden-path"库名"）。
+- `dbName` 在 scaffold 时写入（规则见 golden-path"库名"）。
 - spec 变更即需求变更：走 mma-guide 的变更流程，受影响任务重写 spec 并经用户确认。
 - 经验日志 `.make-my-app/experience-log.md` 与 progress.json 并行生长（见 `experience-log.md` 规范）：failure/lesson/pitfall/correction/install/suggestion 六类事件触发即追加；它不是任何阶段的完成工件，但导出（/export）时是唯一数据源。
 

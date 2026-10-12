@@ -12,7 +12,7 @@ description: 「我要做软件」存档点技能。把 git 完全隐藏在"游�
 1. **入库前检查**（P14，铁闸）：
    - `.gitignore` 必须已覆盖：`node_modules/`、`target/`、`*.log`、`application-local.yml`、`.make-my-app/run/`、`.make-my-app/tests/last-run.json`。
    - `git status` 里若出现密码文件/超大文件/临时文件 → 先补 .gitignore 或删除，绝不带病入库。
-   - **考卷记录**（搭好骨架之后才有）：确认 `.make-my-app/tests/last-run.json` 是最近一次改代码之后跑的，不是就先跑 `node .make-my-app/tests/run-tests.mjs`。结果写进存档名尾巴（`[存档] 完成了记账页面 · 考卷 12/12 过`）和 saves 记录的 `tests` 字段。没全过也照存（存档是安全垫，不是奖状），但存档名里如实写"有 N 条没过"。
+   - **考卷记录**（搭好骨架之后才有）：确认 `.make-my-app/tests/last-run.json` 是最近一次改代码之后跑的，不是就先跑 `node .make-my-app/tests/run-tests.mjs --restart`（带 `--restart`，确保测的是最新代码）。结果写进存档名尾巴（`[存档] 完成了记账页面 · 考卷 12/12 过`）和 saves 记录的 `tests` 字段。没全过也照存（存档是安全垫，不是奖状），但存档名里如实写"有 N 条没过"。
 2. 没有 `.git` → 静默 `git init`（不向用户提 git 这个词）。
 3. 已有 `.git` 且是用户自己的仓库 → 尊重：不改动历史、不碰分支，只在当前分支追加提交；若有他人未提交的改动，先问用户"这些不是我做的改动，一起存进去吗？"
 4. `git add -A` + `git commit`，提交消息用大白话任务名（格式：`[存档] 完成了记账页面`），时间自动记录。

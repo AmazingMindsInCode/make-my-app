@@ -29,7 +29,7 @@ description: 「我要做软件」唯一入口与全程领航员。检查项目�
 | env-check / env-setup | mma-env | 体检结果落盘后才放行 |
 | requirement | mma-requirement | 放行条件=确认环通过：需求单含场景剧本、边界约定无悬案、**最终确认记录（用户原话+日期）**在案——三缺一拦下 |
 | solution | mma-solution | 必须真选了一张卡，decisions 已写盘 |
-| scaffold / build | mma-build | 每个任务完成必须有测试子代理（mma-spec-tester）spec 全 pass + "跑给你看"的证据 |
+| scaffold / build | mma-build | 每个任务完成必须有考卷执行器退出码 0（测试子代理 mma-spec-tester 出的题全过、人工题用户亲手验过）+ "跑给你看"的证据 |
 | verify | mma-verify | 验收报告全 pass 才准进 ship |
 | ship | mma-ship | 每级上线必须用户明确同意才推进 |
 | 任意 ←→ 存档点 | mma-savepoint | 阶段推进前提醒存档 |

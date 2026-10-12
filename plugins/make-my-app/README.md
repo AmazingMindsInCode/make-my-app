@@ -37,14 +37,14 @@
 
 ## 四道安全闸（为什么可以放心交给它）
 
-1. **验证闭环**：每个任务自带大白话验收标准（spec），实现后由独立测试子代理（mma-spec-tester）逐条验证，全过才算完；AI 说"修好了"必须复现原问题并请你亲手再试。
+1. **验证闭环**：每个任务自带大白话验收标准（spec），实现后由独立测试子代理（mma-spec-tester）把每条写成能反复跑的考题并考一遍，全过才算完；考题留在项目里，以后每次改动都全量重考，做好的功能被改坏会被当场抓住。AI 说"修好了"必须复现原问题并请你亲手再试。
 2. **进度真相源**：进度只认项目里的 `.make-my-app/progress.json` 和实际文件，不靠 AI 记忆；换会话、关机重启都不丢。
 3. **存档点**：全程自动快照（对用户隐藏 git），随时"回到上个存档点"，回滚前还自动备份当下状态。
 4. **人说了算**：花钱、输密码、开放端口永远由用户亲手完成；装软件经用户**逐项同意**后可由插件代劳（优先 winget 静默安装，亮出确切命令再执行，装完验证），密码类步骤绝不代办。
 
 ## 技术黄金路径（已替用户选好，无需决策）
 
-JDK 17（Temurin）· Spring Boot 3 · MySQL 8 · MyBatis-Plus · Vue 3 + Vite + Element Plus · 项目自带 Maven 包装器（mvnw）与国内镜像配置，**用户无需安装 Maven** · 前端成品打进后端 → 最终交付物是"双击 start.bat 就能用"的单个应用。详见 `references/golden-path.md`。
+JDK 17（Temurin）· Spring Boot 3 · MySQL 8 · MyBatis-Plus · Flyway（表结构随存档走，库和表自动建）· Vue 3 + Vite + Element Plus · 项目自带 Maven 包装器（mvnw）与国内镜像配置，**用户无需安装 Maven** · 前端成品打进后端 → 最终交付物是"双击 start.bat 就能用"的单个应用。详见 `references/golden-path.md`。
 
 ## 成熟组件如何编入既有能力（无独立命令）
 
@@ -106,4 +106,4 @@ make-my-app/
 
 ## License
 
-MIT（见 LICENSE 文件）
+MIT（见 LICENSE 文件）。例外：`references/templates/mvnw-cmd.txt`、`mvnw-sh.txt` 是 Apache Maven Wrapper 3.3.4 官方原件，按 Apache License 2.0 分发（文件头保留了许可声明）。

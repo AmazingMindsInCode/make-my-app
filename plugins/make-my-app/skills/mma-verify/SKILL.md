@@ -28,7 +28,7 @@ description: 「我要做软件」验收与修复闭环技能。两条职责：�
 
 派**独立考官**子代理 `rookie-reviewer`（agents 目录，通过 Agent 工具派发）：
 
-- 交给它：项目路径、需求单路径（.make-my-app/requirement.md）、任务清单及各任务 spec（progress.json）、启动方式。**不告诉它开发过程的任何对话**——fresh eyes，它没见过怎么做的，只看做出来的对不对。
+- 交给它：项目路径、需求单路径（.make-my-app/requirement.md）、任务清单及各任务 spec（progress.json）、测试实例开关 `node .make-my-app/bin/server-ctl.mjs`。**不告诉它开发过程的任何对话**——fresh eyes，它没见过怎么做的，只看做出来的对不对。
 - 它先跑全量考卷拿到 spec 级结论，再逐条验 R#，按 `../../references/templates/acceptance-report.md` 出报告（pass / fail / blocked + 证据）。browser-test 包在位时，你可以把浏览器自动化的结果随任务参数交给考官当**线索**——这些结果出自开发者之手，考官不能拿它直接判通过（考官不直接开浏览器）。
 - 你处理报告：fail → 回 mma-build 修复闭环，修完**只重验失败条目**；blocked → 告诉用户缺什么（如"需要你的手机连同一个 WiFi 试一下"），补齐再验。
 - 全 pass（或用户认账的遗留清单）→ 报告落盘 `.make-my-app/acceptance-report.md`，progress.json 推进 ship。

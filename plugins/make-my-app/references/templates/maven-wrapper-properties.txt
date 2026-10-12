@@ -1,0 +1,5 @@
+# Copied verbatim to backend/.mvn/wrapper/maven-wrapper.properties at scaffold time.
+# Maven itself is downloaded from the Aliyun mirror (reachable in mainland China). Keep it that way.
+wrapperVersion=3.3.4
+distributionType=only-script
+distributionUrl=https://maven.aliyun.com/repository/public/org/apache/maven/apache-maven/3.9.9/apache-maven-3.9.9-bin.zip

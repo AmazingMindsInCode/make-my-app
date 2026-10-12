@@ -3,7 +3,7 @@ chcp 65001 >nul
 cd /d "%~dp0backend"
 if not exist "target\app.jar" (
   echo 第一次运行，先组装软件，需要几分钟，以后就不用了...
-  call mvnw.cmd -s .mvn\aliyun-settings.xml package -DskipTests
+  call .\mvnw.cmd -s .mvn\aliyun-settings.xml package -DskipTests
 )
 echo 软件启动中，完成后会自动打开浏览器...
 start "" http://localhost:8080

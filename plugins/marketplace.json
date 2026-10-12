@@ -4,7 +4,7 @@
     {
       "name": "make-my-app",
       "source": "./make-my-app",
-      "version": "0.4.0",
+      "version": "0.4.1",
       "description": "我要做软件 — 零基础小白的开箱即用开发助手，从想法到上线的全程大白话引导",
       "displayName": "我要做软件 (make-my-app)",
       "displayName_i18n": {

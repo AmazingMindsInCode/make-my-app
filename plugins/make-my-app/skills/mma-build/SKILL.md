@@ -15,7 +15,7 @@ description: 「我要做软件」开发技能。A 阶段按黄金路径生成�
 
 ## A. 搭骨架（scaffold，一次性）
 
-1. 按 golden-path 的"项目骨架"生成完整目录（后端+前端+start.bat+dev.bat+.gitignore+README+健康检查接口+第一个表结构迁移文件+application-test.yml，模板在 `../../references/templates/`）。Maven 包装器三件套从模板**原样复制**，绝不凭记忆手写。
+1. 按 golden-path 的"项目骨架"生成完整目录（后端+前端+start.bat+dev.bat+.gitignore+README+健康检查接口+FlywayConfig+第一个表结构迁移文件+application-test.yml，模板在 `../../references/templates/`）。Maven 包装器三件套从模板**原样复制**，绝不凭记忆手写。
 2. 数据库密码此刻写入 `application-local.yml`（若用户已知），该文件必须在 .gitignore 里（P14）。
 3. **装考卷工具**（原样复制，不改一个字）：`templates/server-ctl-mjs.txt` → `.make-my-app/bin/server-ctl.mjs`；`templates/tests-lib-mjs.txt` → `.make-my-app/tests/_lib.mjs`；`templates/run-tests-mjs.txt` → `.make-my-app/tests/run-tests.mjs`。
 4. 三关都过才算骨架完成：编译通过；空白首页能在浏览器打开（`http://localhost:8080`）；`node .make-my-app/bin/server-ctl.mjs start` 能把测试实例拉起来（证明库自动建好、表结构迁移跑通），验完 `stop`。

@@ -1,0 +1,8 @@
+# 固定换行符：Windows 上 git 的自动换行转换会把这些脚本弄坏
+# 钩子脚本由 Git Bash 执行，带 Windows 换行会报 $'\r': command not found
+*.sh text eol=lf
+# Maven 包装器官方原件按字节原样保存：mvnw.cmd 必须是 Windows 换行，mvnw 必须是 Unix 换行
+plugins/make-my-app/references/templates/mvnw-cmd.txt -text
+plugins/make-my-app/references/templates/mvnw-sh.txt -text
+# 批处理模板用 Windows 换行
+plugins/make-my-app/references/templates/*-bat.txt text eol=crlf

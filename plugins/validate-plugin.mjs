@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 // make-my-app 插件结构校验（开发用，不属于插件本体）
 // 用法：node validate-plugin.mjs
-import { readFileSync, existsSync, readdirSync } from 'node:fs';
+import { readFileSync, existsSync, readdirSync, mkdtempSync, copyFileSync, rmSync } from 'node:fs';
 import { join, dirname } from 'node:path';
+import { tmpdir } from 'node:os';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
@@ -33,6 +34,12 @@ const requiredFiles = [
   'references/templates/aliyun-settings.xml',
   'references/templates/start-bat.txt',
   'references/templates/dev-bat.txt',
+  'references/templates/server-ctl-mjs.txt',
+  'references/templates/tests-lib-mjs.txt',
+  'references/templates/run-tests-mjs.txt',
+  'references/templates/mvnw-cmd.txt',
+  'references/templates/mvnw-sh.txt',
+  'references/templates/maven-wrapper-properties.txt',
 ];
 for (const f of requiredFiles) {
   existsSync(join(root, f)) ? ok(`文件存在: ${f}`) : bad(`缺文件: ${f}`);
@@ -109,6 +116,37 @@ for (const a of readdirSync(join(root, 'agents'))) {
 // 7. 钩子脚本语法
 const r = spawnSync('bash', ['-n', join(root, 'hooks', 'session-start.sh')], { encoding: 'utf8' });
 r.status === 0 ? ok('session-start.sh 语法通过 (bash -n)') : bad(`session-start.sh 语法错误: ${r.stderr}`);
+
+// 7b. 考卷工具模板语法（.txt 存放，复制成 .mjs 后 node --check）
+const tmp = mkdtempSync(join(tmpdir(), 'mma-validate-'));
+for (const t of ['server-ctl-mjs.txt', 'tests-lib-mjs.txt', 'run-tests-mjs.txt']) {
+  const src = join(root, 'references', 'templates', t);
+  if (!existsSync(src)) continue;
+  const dst = join(tmp, t.replace(/-mjs\.txt$/, '.mjs'));
+  copyFileSync(src, dst);
+  const c = spawnSync(process.execPath, ['--check', dst], { encoding: 'utf8' });
+  c.status === 0 ? ok(`模板语法通过 (node --check): ${t}`) : bad(`模板语法错误: ${t} → ${c.stderr}`);
+}
+rmSync(tmp, { recursive: true, force: true });
+
+// 7b2. 钩子脚本必须是 Unix 换行（Git Bash 遇到 \r 会报错，钩子静默失效）
+const hookSh = join(root, 'hooks', 'session-start.sh');
+if (existsSync(hookSh)) {
+  readFileSync(hookSh, 'utf8').includes('\r') ? bad('session-start.sh 含 Windows 换行（\\r），钩子会失效') : ok('session-start.sh 为 LF 换行');
+}
+
+// 7c. Maven 包装器模板：mvnw.cmd 必须是 CRLF（LF 会让 cmd 解析批处理出错），properties 必须指向阿里云
+const mvnwCmd = join(root, 'references', 'templates', 'mvnw-cmd.txt');
+if (existsSync(mvnwCmd)) {
+  const text = readFileSync(mvnwCmd, 'utf8');
+  /\r\n/.test(text) && !/[^\r]\n/.test(text) ? ok('mvnw-cmd.txt 为 CRLF 换行') : bad('mvnw-cmd.txt 换行不是纯 CRLF');
+}
+const wrapperProps = join(root, 'references', 'templates', 'maven-wrapper-properties.txt');
+if (existsSync(wrapperProps)) {
+  /^distributionUrl=https:\/\/maven\.aliyun\.com\/.+-bin\.zip\s*$/m.test(readFileSync(wrapperProps, 'utf8'))
+    ? ok('maven-wrapper-properties 指向阿里云 -bin.zip')
+    : bad('maven-wrapper-properties 的 distributionUrl 不是阿里云 -bin.zip');
+}
 
 // 8. 自包含性粗查：不得依赖本机私有的具名 skill（mma-find-skill 提及安装目标目录 ~/.agents/skills/ 属合法，不算依赖）
 const banned = [/\.claude\/skills\//, /\b(grilling|team-orchestrator|superpowers|need-explorer|plugin-creator|dynamic-workflows)\b/];

@@ -15,7 +15,7 @@ description: 「我要做软件」三级渐进上线向导。L1 本机双击即�
 
 ## L1 本机（自己的电脑自己用）
 
-1. 出成品：`cd frontend && npm run build`（前端成品进后端包裹）→ `cd backend && mvnw.cmd -s .mvn\aliyun-settings.xml package -DskipTests`。
+1. 出成品：`cd frontend && npm run build`（前端成品进后端包裹）→ `cd backend && .\mvnw.cmd -s .mvn\aliyun-settings.xml package -DskipTests`。
 2. 让用户**双击 start.bat**（不许你代跑——这是用户的"开机仪式"），浏览器自动打开。
 3. 验证：用户亲手点开核心功能走一遍；你用 curl 抽查健康接口。
 4. 存档点："L1 本机版上线"。progress.json 的 shipLevel=1。
@@ -42,7 +42,7 @@ description: 「我要做软件」三级渐进上线向导。L1 本机双击即�
 1. 用户买好服务器，告诉你系统选了什么（👉 推荐：Ubuntu 22.04 或 Windows Server，用户熟 Windows 就选 Windows）。
 2. 网络：教用户在云控制台"防火墙/安全组"放行 8080（和远程登录端口）——云上的门卫，截图级指引。
 3. 装 JDK17 到服务器（你给命令，Windows 服务器可远程桌面装；Linux 给逐条命令）。
-4. 数据搬运：在服务器上装 MySQL、建库、把本机数据导出导入（你生成导出/导入命令，账号密码用户自己输）。
+4. 数据搬运：在服务器上装 MySQL（库和表不用手建，软件第一次启动会按迁移文件自动建好），再把本机数据导出导入（你生成导出/导入命令，账号密码用户自己输）。
 5. 部署：把 `app.jar` 和启动脚本传上去，后台方式跑起来（Linux 用 systemd，Windows 用任务计划/nssm——给现成配置文件）。
 6. 验证：用户用自己的手机（关掉 WiFi 用流量）访问 `http://服务器公网IP:8080`，走一遍核心功能——**流量访问成功才算 L3 过关**。
 7. 可选加装（分别确认）：域名（好记的门牌）→ nginx（接待员）→ HTTPS（带锁的通道）。每项给出要不要的判断建议（👉 HTTPS：有用户输入信息的必须上；纯自己看看可以缓）。

@@ -12,7 +12,7 @@
 | P6 | 页面样式/位置问题反复改不对 | AI 视觉判断在像素级不可靠（把矩形判成椭圆的真事） | 布局/尺寸类问题用**脚本测量**（读元素坐标尺寸），不信截图目测 | 写一小段 node/python 脚本输出元素 getBoundingClientRect 数值对比 |
 | P7 | 命令行发中文内容的请求，服务端收到 `??` | Git Bash 编码问题 | 带中文的请求体先写入临时 json 文件，用 `curl -d @file.json` 发 | 同左；或改用 node_repl / 浏览器控制台发请求 |
 | P8 | 启动报端口被占（8080/3306） | 上次启动的进程没退干净 | 启动前 `netstat -ano \| findstr :8080` 检查 | `taskkill /PID <pid> /F`（注意：可能只杀了外层 shell，确认进程真没了再重启） |
-| P9 | 数据库连不上 | MySQL 服务没启动 / 密码错 / 库没建 | env-setup 完成时必须做连接测试并落盘结果 | 服务：`net start MySQL80`（或 services.msc 手动启）；密码：重置或改 application-local.yml；建库见 golden-path |
+| P9 | 数据库连不上 | MySQL 服务没启动 / 密码错 / 库没建 | env-setup 完成时必须做连接测试并落盘结果 | 服务：`net start MySQL80`（或 services.msc 手动启）；密码：重置或改 application-local.yml；库：确认连接地址带 `createDatabaseIfNotExist=true`（见 golden-path"表结构"） |
 | P10 | 长时间命令输出刷屏，看不到关键信息 | 构建日志淹没输出 | 长命令输出重定向到文件再 grep 关键行 | `命令 > build.log 2>&1` 然后 `grep -E "ERROR\|BUILD" build.log` |
 | P11 | npm install 卡住或失败 | 直连国外源慢/超时 | 装 Node 后立即换 npmmirror 源；install 显式带 `--registry` | `npm config set registry https://registry.npmmirror.com` 后重装 |
 | P12 | 前端改了但页面没变 | 浏览器缓存 / vite dev server 没在跑 / 忘了 build | 改前端必须确认 dev server 在跑；出成品必须 `npm run build` | 浏览器 Ctrl+F5 硬刷新；检查 5173 端口进程 |
