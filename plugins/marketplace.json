@@ -1,0 +1,21 @@
+{
+  "name": "beginner-dev-local",
+  "plugins": [
+    {
+      "name": "make-my-app",
+      "source": "./make-my-app",
+      "version": "0.4.0",
+      "description": "我要做软件 — 零基础小白的开箱即用开发助手，从想法到上线的全程大白话引导",
+      "displayName": "我要做软件 (make-my-app)",
+      "displayName_i18n": {
+        "zh-CN": "我要做软件",
+        "en": "Make My App"
+      },
+      "description_i18n": {
+        "zh-CN": "我要做软件 — 零基础小白的开箱即用开发助手：需求梳理、方案挑选、环境装配、引导式开发、验收测试、三级上线（本机/局域网/公网）、自动存档。入口：/start /continue /status /help",
+        "en": "Make My App — walks absolute beginners from idea to a running app: requirements, solution picking, environment setup, guided coding, acceptance testing, 3-level deployment, and auto save-points."
+      },
+      "category": "productivity"
+    }
+  ]
+}

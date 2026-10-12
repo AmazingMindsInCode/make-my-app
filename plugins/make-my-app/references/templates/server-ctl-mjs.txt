@@ -1,0 +1,125 @@
+#!/usr/bin/env node
+// 「我要做软件」测试实例开关（scaffold 时原样复制到 .make-my-app/bin/server-ctl.mjs）
+// 只管"测试实例"：8081 端口 + 独立的 test 库，给自动验收考卷用；绝不碰用户自己开着的软件（8080）和真实数据。
+// 用法：node .make-my-app/bin/server-ctl.mjs start | stop | restart | ensure | status
+import { spawn, spawnSync } from 'node:child_process';
+import { existsSync, readFileSync, writeFileSync, mkdirSync, rmSync } from 'node:fs';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const SELF = fileURLToPath(import.meta.url);
+const ROOT = join(dirname(SELF), '..', '..');
+const RUN = join(ROOT, '.make-my-app', 'run');
+const PID_FILE = join(RUN, 'test-server.pid');
+const LOG_FILE = join(RUN, 'test-server.log');
+const PORT = Number(process.env.MMA_TEST_PORT || 8081);
+const HEALTH = `http://localhost:${PORT}/api/health`;
+const START_TIMEOUT_S = Number(process.env.MMA_START_TIMEOUT || 300); // 第一次启动要下载依赖，给足时间
+const WIN = process.platform === 'win32';
+const CMD = process.env.MMA_SERVER_CMD ||
+  `${WIN ? 'mvnw.cmd' : './mvnw'} -s .mvn/aliyun-settings.xml spring-boot:run -Dspring-boot.run.profiles=local,test`;
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const say = (m) => console.log(`[测试实例] ${m}`);
+
+async function healthy() {
+  try {
+    return (await fetch(HEALTH, { signal: AbortSignal.timeout(2000) })).ok;
+  } catch {
+    return false;
+  }
+}
+
+function logTail(n = 30) {
+  if (!existsSync(LOG_FILE)) return '（没有日志）';
+  return readFileSync(LOG_FILE, 'utf8').split(/\r?\n/).slice(-n).join('\n');
+}
+
+// PID 文件里的进程还是不是我们起的看护进程（防止 PID 被系统复用后误杀别的程序）
+function ours(pid) {
+  if (WIN) {
+    const r = spawnSync('tasklist', ['/FI', `PID eq ${pid}`, '/FO', 'CSV', '/NH'], { encoding: 'utf8' });
+    return /"node\.exe"/i.test(r.stdout || '');
+  }
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function kill() {
+  if (!existsSync(PID_FILE)) return;
+  const pid = Number(readFileSync(PID_FILE, 'utf8'));
+  if (pid && ours(pid)) {
+    if (WIN) spawnSync('taskkill', ['/PID', String(pid), '/T', '/F'], { stdio: 'ignore' });
+    else try { process.kill(-pid, 'SIGTERM'); } catch { /* 已经没了 */ }
+  }
+  rmSync(PID_FILE, { force: true });
+}
+
+async function stop() {
+  kill();
+  for (let i = 0; i < 15; i++) {
+    if (!(await healthy())) return say('已停止');
+    await sleep(1000);
+  }
+  console.error(`[测试实例] ${PORT} 端口上还有程序在响应，但不是这个开关起的。按防坑清单 P8 查：netstat -ano | findstr :${PORT}`);
+  process.exit(1);
+}
+
+// 两层进程：看护进程脱离当前命令行独立存活（AI 的命令跑完它也不会被带走）；
+// 真正的启动命令跑在看护进程下面，日志由命令行重定向写进文件。
+// 不能一层搞定：Windows 上脱离命令行启动的进程，它再启动的 java 的输出会被系统丢掉，编译报错就看不到了。
+function keep() {
+  const child = spawn(`${CMD} > "${LOG_FILE}" 2>&1`, {
+    cwd: join(ROOT, 'backend'),
+    shell: true,
+    windowsHide: true,
+    stdio: 'ignore',
+  });
+  child.on('exit', (code) => process.exit(code ?? 1));
+}
+
+async function start() {
+  if (await healthy()) return say(`已经在运行（${HEALTH}）`);
+  mkdirSync(RUN, { recursive: true });
+  writeFileSync(LOG_FILE, '');
+  const keeper = spawn(process.execPath, [SELF, '__keep'], { detached: true, windowsHide: true, stdio: 'ignore' });
+  let exited = null;
+  keeper.on('exit', (code) => { exited = code; });
+  writeFileSync(PID_FILE, String(keeper.pid));
+  keeper.unref();
+  for (let waited = 0; waited < START_TIMEOUT_S; waited += 2) {
+    if (await healthy()) return say(`已启动（等了 ${waited} 秒），${HEALTH}`);
+    if (exited !== null) break;
+    await sleep(2000);
+  }
+  kill();
+  console.error(exited !== null
+    ? `[测试实例] 启动失败（进程退出码 ${exited}），日志末尾：`
+    : `[测试实例] 等了 ${START_TIMEOUT_S} 秒还没起来，已放弃，日志末尾：`);
+  console.error(logTail());
+  process.exit(1);
+}
+
+const actions = {
+  __keep: keep, // 内部用，由 start 拉起
+  start,
+  stop,
+  restart: async () => { await stop(); await start(); },
+  ensure: async () => { if (await healthy()) say(`在运行（${HEALTH}）`); else await start(); },
+  status: async () => {
+    const ok = await healthy();
+    say(ok ? `在运行（${HEALTH}）` : '没在运行');
+    process.exit(ok ? 0 : 1);
+  },
+};
+
+const action = actions[process.argv[2]];
+if (!action) {
+  console.error('用法：node .make-my-app/bin/server-ctl.mjs start | stop | restart | ensure | status');
+  process.exit(2);
+}
+await action();

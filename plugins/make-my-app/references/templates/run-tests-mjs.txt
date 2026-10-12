@@ -1,0 +1,136 @@
+#!/usr/bin/env node
+// 「我要做软件」考卷执行器（scaffold 时原样复制到 .make-my-app/tests/run-tests.mjs）
+// 对照 progress.json 里每个任务的 spec，跑 .make-my-app/tests/T#.mjs，逐条出结论。
+// 用法：node .make-my-app/tests/run-tests.mjs [T1 T3 …] [--restart]
+//   不带任务号 = 所有已开工（非 todo）任务的全量考卷，也就是回归测试
+//   --restart  = 先重启测试实例（改过后端代码后必须带，否则测的是旧代码）
+// 退出码：0 全过 / 1 有没过或缺考题 / 2 只差用户亲手验 / 3 测试实例起不来
+import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { join, dirname } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { spawnSync } from 'node:child_process';
+import { registry } from './_lib.mjs';
+
+const TESTS = dirname(fileURLToPath(import.meta.url));
+const MMA = dirname(TESTS);
+const CTL = join(MMA, 'bin', 'server-ctl.mjs');
+const args = process.argv.slice(2);
+const only = args.filter((a) => /^T\d+$/i.test(a)).map((a) => a.toUpperCase());
+
+const readJson = (file, fallback) => (existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : fallback);
+const ctl = (action) => spawnSync(process.execPath, [CTL, action], { stdio: 'inherit' }).status === 0;
+const localTime = () => new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 19);
+
+const progress = readJson(join(MMA, 'progress.json'), null);
+if (!progress) {
+  console.error('找不到 .make-my-app/progress.json');
+  process.exit(1);
+}
+const tasks = (progress.tasks || []).filter((t) => (only.length ? only.includes(t.id) : t.status !== 'todo'));
+const manualChecks = readJson(join(TESTS, 'manual-checks.json'), {});
+
+if (!ctl(args.includes('--restart') ? 'restart' : 'ensure')) {
+  console.log('⛔ 测试实例起不来，本轮全部 blocked（看 .make-my-app/run/test-server.log）');
+  process.exit(3);
+}
+
+// 载入考卷；考卷文件本身写坏了，就把该任务的所有条目判不通过
+const brokenFiles = {};
+for (const t of tasks) {
+  const file = join(TESTS, `${t.id}.mjs`);
+  if (!existsSync(file)) continue;
+  try {
+    await import(pathToFileURL(file).href);
+  } catch (e) {
+    brokenFiles[t.id] = e.message;
+  }
+}
+
+async function attempt(fn) {
+  let timer;
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error('超过 30 秒没有结果')), 30000);
+  });
+  try {
+    await Promise.race([fn(), timeout]);
+    return { s: 'pass', note: '' };
+  } catch (e) {
+    const cause = e.cause ? `（${e.cause.code || e.cause.message}）` : '';
+    return { s: 'fail', note: `${e.message}${cause}` };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+const result = {};
+
+// 1. 普通题
+for (const q of registry.filter((q) => q.kind === 'auto')) result[q.id] = await attempt(q.fn);
+
+// 2. 持久题：先全部造数据，只重启一次，再全部去查
+const persists = registry.filter((q) => q.kind === 'persist');
+const ctx = {};
+for (const q of persists) {
+  ctx[q.id] = {};
+  const r = await attempt(() => q.before(ctx[q.id]));
+  if (r.s === 'fail') result[q.id] = { s: 'fail', note: `重启前造数据就失败了：${r.note}` };
+}
+const waiting = persists.filter((q) => !result[q.id]);
+if (waiting.length) {
+  const restarted = ctl('restart');
+  for (const q of waiting) {
+    result[q.id] = restarted ? await attempt(() => q.after(ctx[q.id])) : { s: 'blocked', note: '测试实例重启失败' };
+  }
+}
+
+// 3. 人工题：用户亲手验过并记录在 manual-checks.json 才算通过
+for (const q of registry.filter((q) => q.kind === 'manual')) {
+  const m = manualChecks[q.id];
+  result[q.id] = m
+    ? { s: 'manual', note: `用户亲手验过（${m.at}）：「${m.words}」` }
+    : { s: 'pending', note: `待用户亲手验：${q.howTo}` };
+}
+
+// 对照 spec 出报告：每条 spec 都必须有考题
+const ICON = { pass: '✅', manual: '✅🙋', fail: '❌', blocked: '⛔', pending: '🙋待验', missing: '📝缺考题' };
+const rows = [];
+const known = new Set();
+for (const t of tasks) {
+  (t.spec || []).forEach((item, i) => {
+    const id = typeof item === 'string' ? `${t.id}-S${i + 1}` : item.id; // 兼容 schemaVersion 1 的字符串 spec
+    const text = typeof item === 'string' ? item : item.text;
+    known.add(id);
+    const r = brokenFiles[t.id]
+      ? { s: 'fail', note: `考卷文件 ${t.id}.mjs 本身有错：${brokenFiles[t.id]}` }
+      : result[id] || { s: 'missing', note: '这条 spec 还没有对应的考题' };
+    rows.push({ task: t.id, id, text, ...r });
+  });
+}
+
+console.log('\n| 编号 | spec | 结论 | 说明 |\n|---|---|---|---|');
+for (const r of rows) console.log(`| ${r.id} | ${r.text} | ${ICON[r.s]} | ${String(r.note).replace(/\|/g, '/')} |`);
+
+const count = (...states) => rows.filter((r) => states.includes(r.s)).length;
+const summary = {
+  total: rows.length,
+  pass: count('pass', 'manual'),
+  fail: count('fail'),
+  blocked: count('blocked'),
+  missing: count('missing'),
+  pending: count('pending'),
+};
+console.log(`\n共 ${summary.total} 条：通过 ${summary.pass} / 没过 ${summary.fail} / 跑不了 ${summary.blocked} / 缺考题 ${summary.missing} / 待用户亲手验 ${summary.pending}`);
+
+const ids = registry.map((q) => q.id);
+const orphans = ids.filter((id) => !known.has(id));
+const dupes = ids.filter((id, i) => ids.indexOf(id) !== i);
+if (orphans.length) console.log(`⚠️ 这些考题在 spec 里找不到对应条目（spec 改过？）：${orphans.join(', ')}`);
+if (dupes.length) console.log(`⚠️ 考题编号重复：${[...new Set(dupes)].join(', ')}`);
+
+const git = spawnSync('git', ['rev-parse', '--short', 'HEAD'], { cwd: dirname(MMA), encoding: 'utf8' });
+writeFileSync(
+  join(TESTS, 'last-run.json'),
+  JSON.stringify({ at: localTime(), head: (git.stdout || '').trim(), tasks: tasks.map((t) => t.id), summary, rows }, null, 2),
+);
+
+process.exit(summary.fail || summary.missing ? 1 : summary.blocked ? 3 : summary.pending ? 2 : 0);

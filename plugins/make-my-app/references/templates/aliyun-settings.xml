@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 项目专用 Maven 下载源配置：走阿里云镜像，国内速度快。
+     用法：mvnw.cmd -s .mvn\aliyun-settings.xml <命令>
+     永远带 -s 使用本文件，禁止裸跑 mvn/mvnw（见防坑清单 P2）。 -->
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 https://maven.apache.org/xsd/settings-1.0.0.xsd">
+  <mirrors>
+    <mirror>
+      <id>aliyun-central</id>
+      <name>Aliyun Central Mirror</name>
+      <url>https://maven.aliyun.com/repository/public</url>
+      <mirrorOf>central</mirrorOf>
+    </mirror>
+  </mirrors>
+</settings>

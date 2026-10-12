@@ -1,0 +1,41 @@
+// 「我要做软件」考题小工具（scaffold 时原样复制到 .make-my-app/tests/_lib.mjs）
+// 考卷 T#.mjs 用这里的三个登记函数（spec / persist / manual）出题，run-tests.mjs 负责执行。这里不写具体题目。
+export const registry = [];
+export const TAG = '[TEST]'; // 考题写入的数据都带这个标记，一眼能认出是测试数据
+
+const BASE = `http://localhost:${process.env.MMA_TEST_PORT || 8081}`;
+
+// 普通题：调接口就能验证的"做了什么 → 看到什么"
+export const spec = (id, text, fn) => registry.push({ kind: 'auto', id, text, fn });
+
+// 持久题："关掉重开还在"类。before 里造数据（要记的东西存进 ctx），执行器统一重启测试实例一次，再跑 after 去查
+export const persist = (id, text, before, after) => registry.push({ kind: 'persist', id, text, before, after });
+
+// 人工题：接口验不了的（颜色、位置、手感、文案好不好懂），howTo 写清楚用户亲手怎么验
+export const manual = (id, text, howTo) => registry.push({ kind: 'manual', id, text, howTo });
+
+// 调测试实例的接口；中文请求体直接写，不会有命令行转码问题
+export async function api(method, path, body) {
+  const send = () => fetch(BASE + path, {
+    method,
+    headers: body === undefined ? {} : { 'Content-Type': 'application/json' },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  let res;
+  try {
+    res = await send();
+  } catch {
+    // 测试实例刚重启过时，旧的连接已经断了，等一下重发一次
+    await new Promise((r) => setTimeout(r, 500));
+    res = await send();
+  }
+  const text = await res.text();
+  let json = null;
+  try { json = JSON.parse(text); } catch { /* 不是 JSON 就只看 text */ }
+  return { status: res.status, json, text };
+}
+
+// 断言：不成立就用这句人话判不通过
+export function expect(ok, msg) {
+  if (!ok) throw new Error(msg);
+}
